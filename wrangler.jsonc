@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "star-copilot-landing",
+  "name": "patient-pine-e3ac",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./dist",
