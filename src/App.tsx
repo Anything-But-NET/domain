@@ -1,4 +1,4 @@
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Play } from "lucide-react";
 import bgImage from "./assets/bg.webp";
 import { ArchitectureSection } from "./components/ArchitectureSection";
 import { ClosingFooter } from "./components/ClosingFooter";
@@ -6,7 +6,7 @@ import { Header } from "./components/Header";
 import { HeroShowcase } from "./components/HeroShowcase";
 import { ProductCapabilities } from "./components/ProductCapabilities";
 import { TeamSection } from "./components/TeamSection";
-import { DASHBOARD_HREF, DEMO_HREF } from "./config";
+import { DASHBOARD_HREF, DEMO_HREF, triggerWalkthroughPlayback } from "./config";
 
 export function App() {
   return (
@@ -26,64 +26,59 @@ export function App() {
       <div className="relative z-10">
         <Header />
 
-      <main>
-        {/* Hero */}
-        <section className="pt-20 pb-24 sm:pt-28 sm:pb-28">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <div className="max-w-3xl">
-              <p className="text-sm text-muted-foreground">
-                Enterprise Knowledge &amp; Support Copilot
-              </p>
+        <main>
+          {/* Hero */}
+          <section className="pt-14 pb-20 sm:pt-20 sm:pb-28">
+            <div className="max-w-6xl mx-auto px-5 sm:px-8">
+              <div className="max-w-3xl">
+                <h1 className="text-4xl sm:text-6xl font-medium tracking-[-0.03em] leading-[1.05] text-foreground">
+                  Answers from SharePoint,
+                  <br />
+                  <span className="text-muted-foreground">
+                    right inside Slack.
+                  </span>
+                </h1>
 
-              <h1 className="mt-4 text-4xl sm:text-6xl font-medium tracking-tight leading-[1.06] text-foreground">
-                Answers from SharePoint,
-                <br />
-                <span className="text-muted-foreground">
-                  right inside Slack and Teams.
-                </span>
-              </h1>
+                <p className="mt-6 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl">
+                  Permission-aware answers grounded in SharePoint with STAR hierarchical retrieval. Directory ACLs run in PostgreSQL before ranking, and low-confidence queries confirm escalation to the operator queue.
+                </p>
 
-              <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-2xl">
-                Employees ask questions where they already work and get answers grounded strictly in your SharePoint documents. Directory permissions are enforced in SQL before retrieval, and weak evidence escalates automatically to a specialist.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <a
-                  href={DEMO_HREF}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 h-11 px-6 bg-primary text-primary-foreground text-sm font-medium hover:bg-brand hover:text-foreground transition-colors focus-visible:outline-1 focus-visible:outline-brand focus-visible:outline-offset-2"
-                >
-                  <span>Watch demo</span>
-                  <ArrowUpRight className="size-4" aria-hidden="true" />
-                </a>
-                <a
-                  href={DASHBOARD_HREF}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 h-11 px-6 border border-border-strong text-foreground text-sm font-medium hover:bg-accent transition-colors focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                >
-                  <span>Open dashboard</span>
-                  <ArrowUpRight className="size-4" aria-hidden="true" />
-                </a>
+                <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <a
+                    href={DASHBOARD_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 h-10 px-5 bg-primary text-primary-foreground text-sm font-medium hover:bg-brand hover:text-foreground transition-colors focus-visible:outline-1 focus-visible:outline-brand focus-visible:outline-offset-2"
+                  >
+                    <span>Open dashboard</span>
+                    <ArrowUpRight className="size-4" aria-hidden="true" />
+                  </a>
+                  <a
+                    href={DEMO_HREF}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      triggerWalkthroughPlayback();
+                    }}
+                    className="inline-flex items-center gap-2 h-10 px-5 border border-border-strong bg-background/40 text-foreground text-sm font-medium hover:bg-accent transition-colors focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  >
+                    <Play className="size-3.5 fill-current" aria-hidden="true" />
+                    <span>Watch demo</span>
+                  </a>
+                </div>
               </div>
+
+              <HeroShowcase />
             </div>
+          </section>
 
-            <HeroShowcase />
-          </div>
-        </section>
+          <ProductCapabilities />
 
-        {/* Product Capabilities — Master-Detail Switcher */}
-        <ProductCapabilities />
+          <ArchitectureSection />
 
-        {/* Architecture & Quiet Evaluation Strip */}
-        <ArchitectureSection />
+          <TeamSection />
+        </main>
 
-        {/* Team */}
-        <TeamSection />
-      </main>
-
-      <ClosingFooter />
+        <ClosingFooter />
       </div>
     </div>
   );

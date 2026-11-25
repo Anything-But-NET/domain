@@ -1,5 +1,5 @@
-import { ArrowUpRight } from "lucide-react";
-import { DASHBOARD_HREF, DEMO_HREF } from "../config";
+import { ArrowUpRight, Play } from "lucide-react";
+import { DASHBOARD_HREF, DEMO_HREF, triggerWalkthroughPlayback } from "../config";
 
 export function ClosingFooter() {
   return (
@@ -18,12 +18,14 @@ export function ClosingFooter() {
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <a
               href={DEMO_HREF}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault();
+                triggerWalkthroughPlayback();
+              }}
               className="inline-flex items-center gap-2 h-11 px-6 bg-primary text-primary-foreground text-sm font-medium hover:bg-brand hover:text-foreground transition-colors focus-visible:outline-1 focus-visible:outline-brand focus-visible:outline-offset-2"
             >
+              <Play className="size-3.5 fill-current" aria-hidden="true" />
               <span>Watch demo</span>
-              <ArrowUpRight className="size-4" aria-hidden="true" />
             </a>
             <a
               href={DASHBOARD_HREF}
