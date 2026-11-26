@@ -1,36 +1,36 @@
 const INGESTION_STEPS = [
   {
     step: "01",
-    title: "Microsoft Graph & .NET 10 Worker",
-    body: "Runs on-demand SharePoint & Entra ID syncs, converts DOCX/PDF via Mammoth and PdfPig into Markdown, deduplicates unchanged payloads in memory via SHA-256, and publishes to Kafka.",
+    title: "Microsoft Graph & .NET Worker",
+    body: "Runs on-demand SharePoint & Entra ID syncs, converts DOCX and PDF into clean Markdown, skips unchanged files, and publishes updates.",
   },
   {
     step: "02",
-    title: "Python FastAPI & gRPC STAR Vectorizer",
-    body: "Consumes rag.documents.ingestion.v1, embeds hierarchical trees with BAAI/bge-m3 (1024-dim Late Chunking + self-attention pooling over gRPC), and emits rag.sync.status.v1.",
+    title: "Python Embedding Service",
+    body: "Structures document sections hierarchically, embeds passages with BAAI/bge-m3 over gRPC, and emits sync status events.",
   },
   {
     step: "03",
-    title: "Dual-Schema PostgreSQL (rag & core)",
-    body: "Stores leaf/parent vectors in rag.vector_nodes (pgvector HNSW) and group ACLs in rag.document, while Java Core syncs document metadata, users, and sync runs into core.*.",
+    title: "PostgreSQL Storage",
+    body: "Stores indexed document sections and group permissions alongside synced metadata, users, and ingestion history.",
   },
 ];
 
 const QUERY_STEPS = [
   {
     step: "01",
-    title: "Slack Bot (.NET 10) to Java Core",
-    body: "Captures Slack events, assigns a trace ID in Spring Boot, and resolves the requester's current Entra ID allowed_groups from core.users.",
+    title: "Slack Bot to Java Core",
+    body: "Captures Slack events, assigns a trace ID in Spring Boot, and resolves the requester's current Entra ID groups.",
   },
   {
     step: "02",
-    title: "SQL-Filtered STAR RAG & Guardrails",
-    body: "Executes hnsw.iterative_scan filtered by allowed_groups, merges parent nodes (0.50 threshold, 0.06 anti-dilution guard), and generates grounded JSON via google/gemini-3.5-flash-lite.",
+    title: "Permission-Filtered Search",
+    body: "Queries PostgreSQL filtered by allowed groups, merges parent context, and generates a grounded answer via Gemini.",
   },
   {
     step: "03",
     title: "Citations, Telemetry & Escalations",
-    body: "Enriches SharePoint URLs, writes outcomes to core.generation_diagnostics, or opens a 15-minute Slack confirmation draft promoting to core.escalations.",
+    body: "Attaches SharePoint URLs, records diagnostics, or opens a 15-minute confirmation draft in Slack for expert review.",
   },
 ];
 
@@ -58,21 +58,17 @@ export function ArchitectureSection() {
     <section id="architecture" className="py-24 border-t border-border">
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <div className="mb-14 max-w-2xl">
-          <p className="text-sm text-muted-foreground">Architecture</p>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-medium tracking-[-0.02em] text-foreground">
+          <h2 className="text-3xl sm:text-4xl font-medium tracking-[-0.02em] text-foreground">
             Two decoupled pipelines.
           </h2>
-          <p className="mt-4 text-base text-muted-foreground leading-relaxed">
-            Kafka-decoupled document ingestion writes to PostgreSQL asynchronously so live Slack queries stay deterministic.
-          </p>
         </div>
 
         {/* 2-Column Hairline Pipeline Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-b border-border lg:divide-x divide-border">
-          {/* Column 1: Document & ACL Ingestion */}
+          {/* Column 1: Document & Permission Ingestion */}
           <div className="py-8 lg:pr-12 border-b lg:border-b-0 border-border">
             <h3 className="text-lg font-medium tracking-tight text-foreground pb-4 border-b border-border">
-              Document &amp; ACL Ingestion
+              Document &amp; Permission Ingestion
             </h3>
             <ol className="divide-y divide-border">
               {INGESTION_STEPS.map((item) => (

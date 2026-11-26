@@ -1,35 +1,35 @@
 const TEAM = [
   {
     name: "Oleh Pona",
-    role: "Team Lead, Java Core & Control Plane API",
+    role: "Team Lead & Java Core",
   },
   {
     name: "Vitalii Peleshko",
-    role: ".NET Graph Ingestion & Slack/Teams Bot",
+    role: ".NET Graph Ingestion & Slack Bot",
   },
   {
     name: "Dmytro Patsula",
-    role: "Java Core & Escalation Diagnostics",
+    role: "Java Core & Diagnostics",
   },
   {
     name: "Maksym Hrechanyi",
-    role: "Kafka Contracts & Event Sync",
+    role: "Event Pipeline & Sync",
   },
   {
     name: "Vasyl Khrustiuk",
-    role: "Next.js Admin UI & Database Schemas",
+    role: "Next.js Dashboard & Schemas",
   },
   {
     name: "Andrii Bezpalko",
-    role: "Python RAG & gRPC PyTorch Vectorizer",
+    role: "Python Search & Embeddings",
   },
   {
     name: "Taras Ivaniuk",
-    role: "SQL-Level RBAC & Group Filtering",
+    role: "Access Control & Group Filtering",
   },
   {
     name: "Zakharii Abramchuk",
-    role: "Environment, DBML & OpenAPI Contracts",
+    role: "Infrastructure & API Contracts",
   },
 ];
 
@@ -38,13 +38,9 @@ export function TeamSection() {
     <section id="team" className="py-24 border-t border-border">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         <div className="lg:col-span-4">
-          <p className="text-sm text-muted-foreground">Team</p>
-          <h2 className="mt-3 text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
+          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
             Built by Anything But .NET
           </h2>
-          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            Eight engineers across Java, .NET, Python, and Next.js.
-          </p>
         </div>
 
         <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-x-10">

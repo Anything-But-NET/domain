@@ -3,17 +3,17 @@ import { DASHBOARD_HREF } from "../config";
 
 const INGESTION_RUNS = [
   {
-    document: "db-migrations.md",
+    document: "Engineering Runbook",
     status: "COMPLETED",
     tone: "text-success",
   },
   {
-    document: "Policy.md",
+    document: "Company Policy",
     status: "COMPLETED",
     tone: "text-success",
   },
   {
-    document: "q4_2026_budget_and_payroll_confidential.md",
+    document: "Q4 Budget & Payroll",
     status: "COMPLETED",
     tone: "text-success",
   },
@@ -24,22 +24,21 @@ export function ProductCapabilities() {
     <section id="product" className="py-24 border-t border-border">
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <div className="mb-14 max-w-2xl">
-          <p className="text-sm text-muted-foreground">Capabilities</p>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-medium tracking-[-0.02em] text-foreground">
+          <h2 className="text-3xl sm:text-4xl font-medium tracking-[-0.02em] text-foreground">
             Built for enterprise governance.
           </h2>
         </div>
 
         {/* Architectural 2x2 Hairline Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 border-t border-l border-border bg-background/40">
-          {/* 01: SQL ACLs & STAR hierarchical retrieval */}
+          {/* 01: Access-filtered search */}
           <div className="border-r border-b border-border p-7 sm:p-10 flex flex-col justify-between gap-8">
             <div className="space-y-2.5">
               <h3 className="text-lg font-medium tracking-tight text-foreground">
-                Pre-retrieval SQL RBAC &amp; STAR trees
+                Permission-aware search
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Directory group permissions filter leaf nodes in PostgreSQL using pgvector iterative HNSW scans before STAR bottom-up auto-merge reconstructs parent heading context.
+                Directory group permissions are checked in PostgreSQL before ranking, so people only get answers from SharePoint files they can already open.
               </p>
             </div>
 
@@ -56,23 +55,23 @@ export function ProductCapabilities() {
             </pre>
           </div>
 
-          {/* 02: Grounded citations & prompt versioning */}
+          {/* 02: Verified citations */}
           <div className="border-r border-b border-border p-7 sm:p-10 flex flex-col justify-between gap-8">
             <div className="space-y-2.5">
               <h3 className="text-lg font-medium tracking-tight text-foreground">
-                Verified citations &amp; prompt versions
+                Verified citations
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Claims resolve to exact SharePoint URLs from <span className="font-mono text-xs text-foreground">core.document_metadata</span> while rejecting unretrieved chunk IDs. Prompts are hashed with UUIDv5 and scoped to outcome analytics.
+                Every claim links directly to its exact SharePoint source document while ignoring unverified passages.
               </p>
             </div>
 
             <div className="pt-4 border-t border-border space-y-1.5">
               <div className="flex items-center justify-between gap-4 text-xs font-mono">
                 <span className="text-foreground truncate">
-                  [1] remote_work_hardware_allowance_old.md
+                  [1] Remote Work Hardware Policy
                 </span>
-                <span className="text-muted-foreground shrink-0">prompt fdf8ab35</span>
+                <span className="text-muted-foreground shrink-0">SharePoint</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 &ldquo;One-time $500 allowance... submit in Expensify / Rippling within 30 calendar days.&rdquo;
@@ -84,29 +83,29 @@ export function ProductCapabilities() {
           <div className="border-r border-b border-border p-7 sm:p-10 flex flex-col justify-between gap-8">
             <div className="space-y-2.5">
               <h3 className="text-lg font-medium tracking-tight text-foreground">
-                Two-step Slack escalation queue
+                Two-step Slack escalation
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Below the 0.60 confidence gate or on empty retrieval, SoVa pauses and posts a 15-minute confirmation draft in Slack. Confirmed questions enter the Control Plane queue with full status history.
+                Below the 0.60 confidence gate or when no match is found, SoVa pauses in Slack and asks before sending the question to an expert.
               </p>
             </div>
 
             <div className="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
-              <span className="text-warning">LOW_CONFIDENCE (0.310 &lt; 0.60)</span>
+              <span className="text-warning">Low confidence (0.31 &lt; 0.60)</span>
               <span className="text-muted-foreground">
-                Slack confirm → /escalations (PENDING)
+                Slack confirm → Review queue
               </span>
             </div>
           </div>
 
-          {/* 04: Operator Control Plane */}
+          {/* 04: Operator Dashboard & Analytics */}
           <div className="border-r border-b border-border p-7 sm:p-10 flex flex-col justify-between gap-8">
             <div className="space-y-2.5">
               <h3 className="text-lg font-medium tracking-tight text-foreground">
-                Operator Control Plane &amp; Analytics
+                Operator dashboard &amp; analytics
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Track answer rates, p95 latency, confidence tiers, prompt metrics, operator authorities, and SharePoint ingestion runs across 50 documents and 25 synced users.
+                Track answer rates, response latency, confidence tiers, and SharePoint sync runs across 50 documents and 25 synced users.
               </p>
             </div>
 

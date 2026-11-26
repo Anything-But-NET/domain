@@ -192,7 +192,7 @@ export function HeroShowcase() {
                         isBlocked ? "text-warning" : "text-success"
                       }`}
                     >
-                      {isBlocked ? "EMPTY_RETRIEVAL" : "ANSWERED"}
+                      {isBlocked ? "Needs expert" : "Answered"}
                     </span>
                   </div>
 
@@ -203,7 +203,7 @@ export function HeroShowcase() {
                         <span className="font-mono text-xs text-foreground">[1]</span>.
                       </p>
                       <p className="font-mono text-xs text-muted-foreground truncate">
-                        [1] q4_2026_budget_and_payroll_confidential.md · SharePoint
+                        [1] Q4 2026 Budget &amp; Payroll · SharePoint
                       </p>
                     </>
                   )}
@@ -211,14 +211,14 @@ export function HeroShowcase() {
                   {promptKey === "payroll" && isBlocked && (
                     <>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        No accessible SharePoint evidence matched your directory groups. Send this question to the operator escalation queue?
+                        No accessible SharePoint documents matched your groups. Send this question to an expert?
                       </p>
                       <div className="flex flex-wrap items-center gap-2 pt-0.5 font-mono text-[11px]">
                         <span className="px-2 py-0.5 border border-border-strong text-foreground">
                           Yes, send to expert
                         </span>
                         <span className="text-muted-foreground">
-                          15m escalation draft → /escalations (PENDING)
+                          Queued for expert review
                         </span>
                       </div>
                     </>
@@ -231,7 +231,7 @@ export function HeroShowcase() {
                         <span className="font-mono text-xs text-foreground">[1]</span>.
                       </p>
                       <p className="font-mono text-xs text-muted-foreground truncate">
-                        [1] remote_work_hardware_allowance_old.md · SharePoint (All-Staff)
+                        [1] Remote Work Hardware Policy · SharePoint
                       </p>
                     </>
                   )}
@@ -264,15 +264,14 @@ export function HeroShowcase() {
             <div className="lg:col-span-5 p-5 sm:p-7 bg-background/70 flex flex-col justify-between gap-5 font-mono text-xs">
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-2 text-muted-foreground">
-                  <span>PostgreSQL · pgvector HNSW</span>
+                  <span>PostgreSQL</span>
                   <span className={isBlocked ? "text-warning" : "text-success"}>
-                    {isBlocked ? "0 leaves" : "STAR merged"}
+                    {isBlocked ? "No access match" : "Matched"}
                   </span>
                 </div>
 
                 <pre className="leading-relaxed text-foreground overflow-x-auto text-[11px] sm:text-xs">
                   <code>
-                    <span className="text-muted-foreground">SET LOCAL</span> hnsw.iterative_scan = relaxed_order;{"\n"}
                     <span className="text-muted-foreground">SELECT</span> vn.id, 1 - (vn.embedding &lt;=&gt; $q) AS score{"\n"}
                     <span className="text-muted-foreground">FROM</span> rag.vector_nodes vn{"\n"}
                     <span className="text-muted-foreground">JOIN</span> rag.document d <span className="text-muted-foreground">ON</span> d.document_id = vn.document_id{"\n"}
@@ -289,10 +288,6 @@ export function HeroShowcase() {
               </div>
 
               <div className="pt-4 border-t border-border space-y-2 text-muted-foreground">
-                <div className="flex items-center justify-between gap-2">
-                  <span>prompt · model</span>
-                  <span className="text-foreground">fdf8ab35 · gemini-3.5-flash-lite</span>
-                </div>
                 <div className="flex items-center justify-between gap-2">
                   <span>confidence (gate 0.60)</span>
                   <span className={isBlocked ? "text-warning" : "text-foreground"}>

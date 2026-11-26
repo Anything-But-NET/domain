@@ -40,7 +40,7 @@ export function App() {
                 </h1>
 
                 <p className="mt-6 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl">
-                  Permission-aware answers grounded in SharePoint with STAR hierarchical retrieval. Directory ACLs run in PostgreSQL before ranking, and low-confidence queries confirm escalation to the operator queue.
+                  Permission-aware answers grounded in your SharePoint documents. Access checks run before search, and uncertain questions can be sent straight to an expert.
                 </p>
 
                 <div className="mt-8 flex flex-wrap items-center gap-3">
