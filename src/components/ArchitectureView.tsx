@@ -27,10 +27,10 @@ interface TraceOutcome {
 }
 
 const INVARIANTS = [
-  { value: "0", label: "Unauthorized tokens passed to LLM" },
-  { value: "100%", label: "Source-bound answers" },
-  { value: "0.600", label: "Confidence cutoff" },
-  { value: "15 min", label: "Human escalation draft" },
+  { value: "0", label: "Unauthorized tokens passed to the model" },
+  { value: "100%", label: "Answers bound to verified source passages" },
+  { value: "0.600", label: "Dual confidence cutoff before synthesis" },
+  { value: "0 bytes", label: "Question or answer text stored in telemetry" },
 ];
 
 const INQUIRIES: { key: InquiryKey; code: string; label: string; question: string }[] = [
@@ -54,6 +54,94 @@ const INQUIRIES: { key: InquiryKey; code: string; label: string; question: strin
   },
 ];
 
+const STAR_STEPS = [
+  {
+    step: "01",
+    title: "Structure-Preserving AST Parsing",
+    body: "A deterministic state machine builds the document heading hierarchy while tracking fenced code blocks (``` and ~~~), so # comments inside code never fracture section levels. The tree serializes into a flat CSR array with raw float32 buffers for an isolated vectorization service over gRPC without blocking API I/O.",
+    spec: "AST → CSR flat array + raw float32 over gRPC",
+  },
+  {
+    step: "02",
+    title: "Macro / Micro Late Chunking",
+    body: "Each section runs through a two-pass window: 7,500-token macro passes (500-token overlap) produce contextualized token embeddings across the full section, while 100-token micro leaves preserve fact-level precision without splitting code blocks.",
+    spec: "v_leaf = norm(norm(v_CLS) + norm(mean(H_macro[s:e])))",
+  },
+  {
+    step: "03",
+    title: "Self-Attention Centrality Pooling",
+    body: "Post-order DFS aggregates every parent node from its heading, leaf chunks, and child subsections through a temperature-scaled self-similarity matrix—producing section-level representations with zero model summarization calls during ingestion.",
+    spec: "A = M · Mᵀ   |   w = softmax(mean(A) / τ),  τ = 0.1",
+  },
+  {
+    step: "04",
+    title: "Dual-Trigger Auto-Merging & Zero-JOIN Reads",
+    body: "Queries search top-8 leaves (children_count = 0) and promote to parent sections—each re-checked against caller ACLs—when either trigger fires. Leaf text is stored once; parent nodes hold pre-ordered descendant chunk indexes so full sections hydrate without recursive SQL JOINs.",
+    spec: "quorum > 0.50 ∧ (best_child − parent ≤ 0.06)  ∨  parent > best_child (Δ ≤ 0.06)",
+  },
+];
+
+const GROUNDING_BARRIERS = [
+  {
+    step: "01",
+    title: "Pre-LLM Filtering & Intact Context Budget",
+    body: "Candidate nodes scoring below 0.60 are dropped before synthesis. A 24,000-character budget skips oversized chunks instead of slicing mid-sentence; an empty surviving set triggers zero model calls.",
+  },
+  {
+    step: "02",
+    title: "Prompt-Injection Isolation",
+    body: "System policy explicitly designates retrieved passages as UNTRUSTED REFERENCE DATA. The question and passages are packed into a single JSON object with tools disabled and temperature locked at 0.",
+  },
+  {
+    step: "03",
+    title: "Zero-Tolerance Citation Check",
+    body: "Malformed JSON, an empty citation list, or even a single chunk_id absent from the retrieved context map voids the entire response immediately.",
+  },
+  {
+    step: "04",
+    title: "Conservative Dual Confidence",
+    body: "Effective confidence is capped by the minimum of the model score and the weakest cited passage. Any result below 0.600 suppresses synthesis.",
+  },
+];
+
+const OPERATIONAL_GUARANTEES = [
+  {
+    title: "Idempotent Delta Synchronization",
+    body: "Expands transitive nested corporate directory groups and direct user grants (allowed_groups ∪ {email}), failing closed on files with no valid principals. Two-layer hash skipping avoids redundant processing—reusing cached bytes when only ACLs change without re-downloading—and advances drive delta links transactionally only at zero errors. Out-of-order updates are guarded by row locking (SELECT ... FOR UPDATE), manual event-bus commits, and DLT routing for malformed messages.",
+  },
+  {
+    title: "Content-Addressed Prompt Lineage",
+    body: "Every system prompt and parameter set receives a deterministic UUIDv5 identifier, with recursive secret scrubbing blocking API keys or credentials before database persistence. A single SQL CTE query aggregates answer rate, confidence distribution, p95 latency, and daily trends globally and per individual prompt version.",
+  },
+  {
+    title: "Deterministic Evaluation & Independent RBAC Oracle",
+    body: "Offline evaluation avoids unstable model-as-judge scoring by running 4 deterministic metrics (Relevance, Factual Grounding, 3-stage Citation Correctness, Safe No-Answer) across a 60-case golden set—achieving 100% factual grounding and 100% citation correctness across all 40 answerable cases. An independent RBAC oracle sharing zero code with the primary evaluator verifies visibility across 16 personas, 4 nested group levels, breakInheritance boundaries, and prompt-injection fixtures.",
+  },
+  {
+    title: "Isolated Fault Domains & Operator Security",
+    body: "Three-tier health probes (UP, DEGRADED, DOWN) isolate background failures: an unreachable event bus or document store connector marks status DEGRADED without interrupting synchronous query resolution. Operator tokens stay isolated in HttpOnly cookies at the BFF layer with SameSite and Origin CSRF checks, 7 granular authorities, and cross-service introspection against live operator status in the database.",
+  },
+];
+
+const CONTROL_PLANE_MODULES = [
+  {
+    title: "Outcome Analytics",
+    body: "Single-query CTE telemetry across outcomes, confidence tiers, and p95 latency.",
+  },
+  {
+    title: "Escalation Queue",
+    body: "State-machine ticket triage with retrieved context, draft responses, and immutable status history.",
+  },
+  {
+    title: "Prompt Lineage",
+    body: "Read-only inspection of UUIDv5 prompt versions paired with their scoped production outcomes.",
+  },
+  {
+    title: "Audit & Access",
+    body: "Paginated ingestion and generation traces cross-linked to escalations, prompt versions, users, and operators.",
+  },
+];
+
 function evaluateTrace(role: RoleKey, inquiry: InquiryKey): TraceOutcome {
   if (inquiry === "payroll") {
     if (role === "FINANCE-L3") {
@@ -71,7 +159,7 @@ function evaluateTrace(role: RoleKey, inquiry: InquiryKey): TraceOutcome {
         answer:
           "L3 net base pay for Q4 2026 is $4,600–$5,800/month, and the December 2026 discretionary bonus pool is $84,500 [1].",
         citation: "[1] Q4 2026 Budget & Payroll · Restricted Corpus",
-        actionNote: "Verified extractive synthesis bound to source custody.",
+        actionNote: "Grounded synthesis verified against retrieved chunk IDs.",
       };
     }
 
@@ -87,7 +175,7 @@ function evaluateTrace(role: RoleKey, inquiry: InquiryKey): TraceOutcome {
       resolutionMs: 231,
       totalMs: 250,
       answer:
-        "Zero authorized passages matched role clearance. Inference was never invoked. Confirmation draft opened for accountable human authority.",
+        "Zero authorized passages matched role clearance. Synthesis was never invoked. Confirmation draft staged for accountable human review.",
       citation: null,
       actionNote: "Storage boundary returned empty set · 15 min escalation draft staged.",
     };
@@ -108,7 +196,7 @@ function evaluateTrace(role: RoleKey, inquiry: InquiryKey): TraceOutcome {
       answer:
         "Eligible staff receive a one-time $500 allowance for ergonomic chairs, monitors, and desks (laptops and decor excluded). Submit itemized receipts through the standard expense ledger within 30 calendar days [1].",
       citation: "[1] Remote Work Hardware Policy · General Corpus",
-      actionNote: "Verified extractive synthesis bound to source custody.",
+      actionNote: "Grounded synthesis verified against retrieved chunk IDs.",
     };
   }
 
@@ -130,42 +218,6 @@ function evaluateTrace(role: RoleKey, inquiry: InquiryKey): TraceOutcome {
   };
 }
 
-const PIPELINE_INGESTION = [
-  {
-    step: "01",
-    title: "Incremental Repository Synchronization",
-    body: "Polls institutional document stores on demand, normalizes binary office formats into canonical Markdown, hashes content to skip unchanged artifacts, and records immutable run states.",
-  },
-  {
-    step: "02",
-    title: "Hierarchical Passage Indexing",
-    body: "Decomposes documents into parent-child section trees, computes dense vector representations on leaf passages over an internal RPC channel, and preserves exact coordinate links.",
-  },
-  {
-    step: "03",
-    title: "Atomic Principal & Clearance Binding",
-    body: "Commits document sections alongside synchronized directory principals, group memberships, and clearance masks within a unified transactional store.",
-  },
-];
-
-const PIPELINE_QUERY = [
-  {
-    step: "01",
-    title: "Trace Assignment & Principal Resolution",
-    body: "Assigns an immutable trace identifier to each incoming workplace inquiry and resolves the caller's live directory clearance mask before retrieval begins.",
-  },
-  {
-    step: "02",
-    title: "Pre-Inference Storage Boundary",
-    body: "Executes vector ranking strictly across leaf passages whose parent clearance mask intersects the principal's groups, expanding parent context only for permitted matches.",
-  },
-  {
-    step: "03",
-    title: "Cutoff Gate & Escalation Custody",
-    body: "Enforces the 0.600 deterministic confidence gate, attaches verified source citations, writes complete trace telemetry, or opens a 15-minute confirmation draft for human authority.",
-  },
-];
-
 export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
   const [role, setRole] = useState<RoleKey>("FINANCE-L3");
   const [inquiryKey, setInquiryKey] = useState<InquiryKey>("payroll");
@@ -174,14 +226,16 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
     INQUIRIES.find((item) => item.key === inquiryKey) ?? INQUIRIES[0];
   const trace = evaluateTrace(role, inquiryKey);
   const confidencePct = Math.round(Number(trace.confidence) * 100);
+  const docLabel = trace.matchedDocs === 1 ? "DOC" : "DOCS";
+  const passageLabel = trace.leafPassages === 1 ? "PASSAGE" : "PASSAGES";
 
   return (
     <div>
-      {/* Architecture Header & Invariants */}
-      <section className="pt-12 pb-16 border-b border-border bg-surface">
+      {/* Section 1: Header + 4 Architectural Invariants */}
+      <section className="pt-14 pb-20 border-b border-border">
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-4 pb-8 border-b border-border">
-            <h1 className="font-serif text-4xl sm:text-5xl tracking-[-0.02em] text-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-10">
+            <h1 className="font-serif text-5xl sm:text-6xl tracking-[-0.02em] leading-[1.0] text-foreground">
               Architecture.
             </h1>
 
@@ -206,16 +260,13 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
             </div>
           </div>
 
-          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-l border-b border-border bg-background">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 border-t border-border pt-8">
             {INVARIANTS.map((item) => (
-              <div
-                key={item.label}
-                className="p-5 border-r border-t border-border space-y-1.5"
-              >
-                <dd className="font-mono text-2xl font-medium tracking-tight text-foreground">
+              <div key={item.label} className="space-y-1.5">
+                <dd className="font-mono text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
                   {item.value}
                 </dd>
-                <dt className="font-mono text-[11px] text-muted-foreground leading-snug">
+                <dt className="font-mono text-xs text-muted-foreground leading-snug">
                   {item.label}
                 </dt>
               </div>
@@ -224,15 +275,15 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
         </div>
       </section>
 
-      {/* Interactive Clearance & Cutoff Trace */}
-      <section className="py-20 border-b border-border">
+      {/* Section 2: Pre-Inference Storage Boundary */}
+      <section className="py-24 border-b border-border">
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
-              Inspect clearance enforcement before inference.
+          <div className="mb-10 max-w-3xl space-y-4">
+            <h2 className="font-serif text-3xl sm:text-5xl tracking-[-0.02em] leading-[1.04] text-foreground">
+              Pre-inference storage boundary.
             </h2>
-            <p className="font-mono text-xs text-muted-foreground">
-              Select a role and an inquiry to inspect storage-level filtering and the 0.600 cutoff gate.
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+              Standard HNSW indexes filter after top-K selection and starve recall under restrictive access control lists. Running transactional iterative graph scans with GIN group intersection and exact cosine re-sorting preserves recall without data leakage—and skips model invocation completely when the accessible set is empty.
             </p>
           </div>
 
@@ -330,7 +381,7 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
                           trace.cutoffPassed ? "text-success" : "text-warning"
                         }
                       >
-                        {trace.cutoffPassed ? "CUSTODY VERIFIED" : "SYNTHESIS HALTED"}
+                        {trace.cutoffPassed ? "VERIFIED" : "SYNTHESIS HALTED"}
                       </span>
                     </div>
 
@@ -360,12 +411,13 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
                         trace.matchedDocs > 0 ? "text-success" : "text-warning"
                       }
                     >
-                      {trace.matchedDocs} DOCS / {trace.leafPassages} PASSAGES
+                      {trace.matchedDocs} {docLabel} / {trace.leafPassages} {passageLabel}
                     </span>
                   </div>
 
                   <pre className="p-4 border border-border bg-surface leading-relaxed text-foreground overflow-x-auto text-[11px] sm:text-xs">
                     <code>
+                      <span className="text-muted-foreground">SET LOCAL</span> hnsw.iterative_scan = relaxed_order;{"\n\n"}
                       <span className="text-muted-foreground">SELECT</span> vn.id, 1 - (vn.embedding &lt;=&gt; $q) AS score{"\n"}
                       <span className="text-muted-foreground">FROM</span> index.vector_nodes vn{"\n"}
                       <span className="text-muted-foreground">JOIN</span> index.document d{" "}
@@ -439,76 +491,192 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
         </div>
       </section>
 
-      {/* Two Decoupled Pipelines */}
-      <section className="py-20 border-b border-border">
+      {/* Section 3: STAR — Hierarchical Vector Tree & Retrieval */}
+      <section className="py-24 border-b border-border">
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <div className="mb-12 max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
-              Two decoupled deterministic pipelines.
+          <div className="mb-14 max-w-3xl space-y-4">
+            <h2 className="font-serif text-3xl sm:text-5xl tracking-[-0.02em] leading-[1.04] text-foreground">
+              Hierarchical retrieval without flat-chunk blindness.
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+              Flat chunking severs conditions, tables, and section context, while model-generated tree summaries are expensive and unpredictable.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 border-t border-border pt-12">
+            {STAR_STEPS.map((item) => (
+              <div
+                key={item.step}
+                className="flex flex-col justify-between gap-6 pb-8 border-b border-border"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-mono text-xs text-subtle">
+                      {item.step}
+                    </span>
+                    <h3 className="text-lg font-medium tracking-tight text-foreground">
+                      {item.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {item.body}
+                  </p>
+                </div>
+
+                <pre className="p-3.5 border border-border bg-surface font-mono text-[11px] sm:text-xs text-foreground overflow-x-auto">
+                  <code>{item.spec}</code>
+                </pre>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Section 4: Deterministic Grounding & Cutoff Gate */}
+      <section className="py-24 border-b border-border">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div className="mb-14 max-w-3xl">
+            <h2 className="font-serif text-3xl sm:text-5xl tracking-[-0.02em] leading-[1.04] text-foreground">
+              Zero-tolerance grounding. Calibrated silence.
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-b border-border lg:divide-x divide-border">
-            <div className="py-8 lg:pr-12 border-b lg:border-b-0 border-border">
-              <h3 className="font-mono text-xs tracking-[0.08em] uppercase text-foreground pb-4 border-b border-border">
-                Corpus &amp; Principal Synchronization
-              </h3>
-              <ol className="divide-y divide-border">
-                {PIPELINE_INGESTION.map((item) => (
-                  <li
-                    key={item.step}
-                    className="py-6 last:pb-0 grid grid-cols-[36px_1fr] gap-4 items-baseline"
-                  >
-                    <span className="font-mono text-xs text-subtle">
-                      {item.step}
-                    </span>
-                    <div className="space-y-1.5">
-                      <h4 className="text-base font-medium text-foreground">
-                        {item.title}
-                      </h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {item.body}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start border-t border-border pt-10">
+            <ol className="lg:col-span-7 divide-y divide-border">
+              {GROUNDING_BARRIERS.map((item) => (
+                <li
+                  key={item.step}
+                  className="py-6 first:pt-0 last:pb-0 grid grid-cols-[36px_1fr] gap-4 items-baseline"
+                >
+                  <span className="font-mono text-xs text-subtle">
+                    {item.step}
+                  </span>
+                  <div className="space-y-1.5">
+                    <h3 className="text-base font-medium text-foreground">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {item.body}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
 
-            <div className="py-8 lg:pl-12">
-              <h3 className="font-mono text-xs tracking-[0.08em] uppercase text-foreground pb-4 border-b border-border">
-                Pre-Filtered Retrieval &amp; Governed Resolution
-              </h3>
-              <ol className="divide-y divide-border">
-                {PIPELINE_QUERY.map((item) => (
-                  <li
-                    key={item.step}
-                    className="py-6 last:pb-0 grid grid-cols-[36px_1fr] gap-4 items-baseline"
-                  >
-                    <span className="font-mono text-xs text-subtle">
-                      {item.step}
-                    </span>
-                    <div className="space-y-1.5">
-                      <h4 className="text-base font-medium text-foreground">
-                        {item.title}
-                      </h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {item.body}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+            <div className="lg:col-span-5 border border-border bg-surface p-6 space-y-5 font-mono text-xs">
+              <div className="flex items-center justify-between text-muted-foreground pb-3 border-b border-border">
+                <span>GROUNDING CONTRACT</span>
+                <span className="text-foreground">DETERMINISTIC</span>
+              </div>
+
+              <pre className="leading-relaxed text-foreground overflow-x-auto text-[11px] sm:text-xs">
+                <code>
+                  <span className="text-muted-foreground">temperature</span>          = 0{"\n"}
+                  <span className="text-muted-foreground">context_budget_chars</span> = 24000{"\n"}
+                  <span className="text-muted-foreground">relevance_floor</span>      = 0.600{"\n"}
+                  <span className="text-muted-foreground">confidence_cutoff</span>    = 0.600{"\n\n"}
+                  effective_confidence = min({"\n"}
+                  {"  "}llm_confidence,{"\n"}
+                  {"  "}min(score(c) <span className="text-muted-foreground">for</span> c <span className="text-muted-foreground">in</span> citations){"\n"}
+                  ){"\n\n"}
+                  <span className="text-brand">if</span> retrieval.empty{"\n"}
+                  {"  "}<span className="text-brand">or</span> unknown_chunk_id{"\n"}
+                  {"  "}<span className="text-brand">or</span> effective_confidence &lt; 0.600:{"\n"}
+                  {"    "}suppress_answer(){"\n"}
+                  {"    "}stage_escalation_draft(ttl = 900s)
+                </code>
+              </pre>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Control Plane */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-5 sm:px-8 space-y-8">
+      {/* Section 5: Privacy-Minimal Telemetry & Two-Step Escalation */}
+      <section className="py-24 border-b border-border">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div className="mb-14 max-w-3xl">
+            <h2 className="font-serif text-3xl sm:text-5xl tracking-[-0.02em] leading-[1.04] text-foreground">
+              Telemetry without surveillance. Escalation without noise.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-border lg:divide-x divide-border">
+            <div className="py-10 lg:pr-12 border-b lg:border-b-0 border-border space-y-6">
+              <h3 className="text-lg font-medium tracking-tight text-foreground">
+                Privacy-Minimal Telemetry
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Execution diagnostics persist strictly operational metadata—query_id, channel, outcome, reason_code, confidence, latency_ms, and prompt_version_id—with zero question text and zero answer text in permanent logs.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Question text and citations exist temporarily inside an ephemeral draft table for at most 15 minutes (purged automatically every 60 s) and move to permanent escalation storage only after explicit user confirmation.
+              </p>
+
+              <pre className="p-4 border border-border bg-surface font-mono text-[11px] sm:text-xs text-foreground overflow-x-auto leading-relaxed">
+                <code>
+                  <span className="text-muted-foreground">diagnostics:</span> query_id, channel, outcome, reason_code,{"\n"}
+                  {"             "}confidence, latency_ms, prompt_version_id{"\n"}
+                  <span className="text-muted-foreground">drafts:</span>      query_id, question_text, citations,{"\n"}
+                  {"             "}expires_at = now + 15m (purged every 60s)
+                </code>
+              </pre>
+            </div>
+
+            <div className="py-10 lg:pl-12 space-y-6">
+              <h3 className="text-lg font-medium tracking-tight text-foreground">
+                Transactional Escalation State Machine
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Caller-ownership checks in workplace chat and atomic draft consumption prevent double clicks and duplicate tickets—backed by transactional idempotency on query_id and automatic draft restoration on transient 503 failures.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Every ticket advances through a strict finite state machine with immutable transition history recording the operator identifier and timestamp. CLOSED and CANCELLED are terminal states that lock response edits.
+              </p>
+
+              <pre className="p-4 border border-border bg-surface font-mono text-[11px] sm:text-xs text-foreground overflow-x-auto leading-relaxed">
+                <code>
+                  PENDING ──→ IN_PROGRESS ──→ RESOLVED ──→ CLOSED [terminal]{"\n"}
+                  {"   "}│             │{"\n"}
+                  {"   "}└──→ CANCELLED [terminal] ←──┘
+                </code>
+              </pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 6: Operational Guarantees & Verification */}
+      <section className="py-24 border-b border-border">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div className="mb-14 max-w-3xl">
+            <h2 className="font-serif text-3xl sm:text-5xl tracking-[-0.02em] leading-[1.04] text-foreground">
+              Built to survive real permissions and silent regressions.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 border-t border-border pt-12">
+            {OPERATIONAL_GUARANTEES.map((item) => (
+              <div
+                key={item.title}
+                className="space-y-3 pb-8 border-b border-border"
+              >
+                <h3 className="text-lg font-medium tracking-tight text-foreground">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {item.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Section 7: Operator Control Plane */}
+      <section className="py-24">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 space-y-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
+            <h2 className="font-serif text-3xl sm:text-5xl tracking-[-0.02em] text-foreground">
               Operator Control Plane.
             </h2>
 
@@ -529,6 +697,19 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
               alt="SoVa operator control plane displaying outcome analytics, confidence scores, and latency distribution"
               className="w-full h-auto block"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 border-t border-border pt-8">
+            {CONTROL_PLANE_MODULES.map((item) => (
+              <div key={item.title} className="space-y-2">
+                <h3 className="text-sm font-medium text-foreground">
+                  {item.title}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {item.body}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
