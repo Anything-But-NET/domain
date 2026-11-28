@@ -55,3 +55,17 @@
   transition-duration: 180ms;
   transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
+
+.sova-math .katex-display {
+  margin: 0;
+}
+
+.sova-math .katex {
+  font-size: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .sova-math .katex {
+    font-size: 0.95rem;
+  }
+}

@@ -2,6 +2,8 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { useState } from "react";
 import controlPlaneImage from "../assets/control-plane.webp";
 import { DASHBOARD_HREF, type ViewMode } from "../config";
+import { EscalationStateMachine } from "./EscalationStateMachine";
+import { MathBlock } from "./MathBlock";
 
 interface ArchitectureViewProps {
   onSelectView: (view: ViewMode) => void;
@@ -54,30 +56,51 @@ const INQUIRIES: { key: InquiryKey; code: string; label: string; question: strin
   },
 ];
 
-const STAR_STEPS = [
+const GROUNDING_TEX = String.raw`c_{\text{eff}} = \min\!\Big(c_{\text{LLM}},\; \min_{k \in \mathcal{C}} \operatorname{score}(k)\Big) \ge \textcolor{#c95b3c}{0.600}`;
+
+const STAR_STEPS: {
+  step: string;
+  title: string;
+  body: string;
+  spec?: string;
+  tex?: string;
+}[] = [
   {
     step: "01",
     title: "Structure-Preserving AST Parsing",
     body: "A deterministic state machine builds the document heading hierarchy while tracking fenced code blocks (``` and ~~~), so # comments inside code never fracture section levels. The tree serializes into a flat CSR array with raw float32 buffers for an isolated vectorization service over gRPC without blocking API I/O.",
-    spec: "AST → CSR flat array + raw float32 over gRPC",
+    spec: "AST → CSR flat array · raw float32 · gRPC",
   },
   {
     step: "02",
     title: "Macro / Micro Late Chunking",
     body: "Each section runs through a two-pass window: 7,500-token macro passes (500-token overlap) produce contextualized token embeddings across the full section, while 100-token micro leaves preserve fact-level precision without splitting code blocks.",
-    spec: "v_leaf = norm(norm(v_CLS) + norm(mean(H_macro[s:e])))",
+    tex: String.raw`\vec{v}_{\text{leaf}} = \operatorname{norm}\!\Big(\operatorname{norm}(\vec{v}_{\text{CLS}}) + \operatorname{norm}\!\big(\operatorname{mean}(H_{\text{macro}}[s:e])\big)\Big)`,
   },
   {
     step: "03",
     title: "Self-Attention Centrality Pooling",
     body: "Post-order DFS aggregates every parent node from its heading, leaf chunks, and child subsections through a temperature-scaled self-similarity matrix—producing section-level representations with zero model summarization calls during ingestion.",
-    spec: "A = M · Mᵀ   |   w = softmax(mean(A) / τ),  τ = 0.1",
+    tex: String.raw`A = M M^{\top}, \quad w = \operatorname{softmax}\!\left(\frac{\operatorname{mean}_j(A_{ij})}{\textcolor{#c95b3c}{0.1}}\right), \quad \vec{v}_{\text{parent}} = \operatorname{norm}(w^{\top} M)`,
   },
   {
     step: "04",
     title: "Dual-Trigger Auto-Merging & Zero-JOIN Reads",
     body: "Queries search top-8 leaves (children_count = 0) and promote to parent sections—each re-checked against caller ACLs—when either trigger fires. Leaf text is stored once; parent nodes hold pre-ordered descendant chunk indexes so full sections hydrate without recursive SQL JOINs.",
-    spec: "quorum > 0.50 ∧ (best_child − parent ≤ 0.06)  ∨  parent > best_child (Δ ≤ 0.06)",
+    tex: String.raw`\begin{aligned} &\left(\frac{n_{\text{active}}}{n_{\text{children}}} > \textcolor{#c95b3c}{0.5} \;\land\; s_{\text{best}} - s_{\text{parent}} \le \textcolor{#c95b3c}{0.06}\right) \\ \lor\; &\left(s_{\text{parent}} > s_{\text{best}} \;\land\; s_{\text{global}} - s_{\text{parent}} \le \textcolor{#c95b3c}{0.06}\right) \end{aligned}`,
+  },
+];
+
+const TELEMETRY_STORES = [
+  {
+    store: "diagnostics",
+    data: "query_id, channel, outcome, reason_code, confidence, latency_ms, prompt_version_id",
+    retention: "Permanent · 0 bytes text",
+  },
+  {
+    store: "escalation_drafts",
+    data: "query_id, question_text, citations",
+    retention: "15 min TTL · purged every 60s",
   },
 ];
 
@@ -503,7 +526,7 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 border-t border-border pt-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-12 border-t border-border pt-12">
             {STAR_STEPS.map((item) => (
               <div
                 key={item.step}
@@ -523,9 +546,13 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
                   </p>
                 </div>
 
-                <pre className="p-3.5 border border-border bg-surface font-mono text-[11px] sm:text-xs text-foreground overflow-x-auto">
-                  <code>{item.spec}</code>
-                </pre>
+                {item.tex ? (
+                  <MathBlock tex={item.tex} />
+                ) : (
+                  <div className="px-4 py-3 border border-border bg-surface font-mono text-[11px] sm:text-xs text-foreground overflow-x-auto whitespace-nowrap">
+                    {item.spec}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -563,27 +590,23 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
               ))}
             </ol>
 
-            <div className="lg:col-span-5 border border-border bg-surface p-6 space-y-5 font-mono text-xs">
+            <div className="lg:col-span-5 lg:sticky lg:top-24 border border-border bg-surface p-6 space-y-5 font-mono text-xs">
               <div className="flex items-center justify-between text-muted-foreground pb-3 border-b border-border">
                 <span>GROUNDING CONTRACT</span>
                 <span className="text-foreground">DETERMINISTIC</span>
               </div>
 
-              <pre className="leading-relaxed text-foreground overflow-x-auto text-[11px] sm:text-xs">
+              <MathBlock tex={GROUNDING_TEX} embedded />
+
+              <pre className="pt-5 border-t border-border leading-relaxed text-foreground overflow-x-auto text-[11px] sm:text-xs">
                 <code>
                   <span className="text-muted-foreground">temperature</span>          = 0{"\n"}
-                  <span className="text-muted-foreground">context_budget_chars</span> = 24000{"\n"}
-                  <span className="text-muted-foreground">relevance_floor</span>      = 0.600{"\n"}
-                  <span className="text-muted-foreground">confidence_cutoff</span>    = 0.600{"\n\n"}
-                  effective_confidence = min({"\n"}
-                  {"  "}llm_confidence,{"\n"}
-                  {"  "}min(score(c) <span className="text-muted-foreground">for</span> c <span className="text-muted-foreground">in</span> citations){"\n"}
-                  ){"\n\n"}
+                  <span className="text-muted-foreground">context_budget_chars</span> = 24000{"\n\n"}
                   <span className="text-brand">if</span> retrieval.empty{"\n"}
                   {"  "}<span className="text-brand">or</span> unknown_chunk_id{"\n"}
-                  {"  "}<span className="text-brand">or</span> effective_confidence &lt; 0.600:{"\n"}
-                  {"    "}suppress_answer(){"\n"}
-                  {"    "}stage_escalation_draft(ttl = 900s)
+                  {"  "}<span className="text-brand">or</span> c_eff &lt; 0.600{"\n"}
+                  {"    "}→ suppress_answer(){"\n"}
+                  {"    "}&amp; stage_escalation_draft(ttl = 900s)
                 </code>
               </pre>
             </div>
@@ -612,14 +635,36 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
                 Question text and citations exist temporarily inside an ephemeral draft table for at most 15 minutes (purged automatically every 60 s) and move to permanent escalation storage only after explicit user confirmation.
               </p>
 
-              <pre className="p-4 border border-border bg-surface font-mono text-[11px] sm:text-xs text-foreground overflow-x-auto leading-relaxed">
-                <code>
-                  <span className="text-muted-foreground">diagnostics:</span> query_id, channel, outcome, reason_code,{"\n"}
-                  {"             "}confidence, latency_ms, prompt_version_id{"\n"}
-                  <span className="text-muted-foreground">drafts:</span>      query_id, question_text, citations,{"\n"}
-                  {"             "}expires_at = now + 15m (purged every 60s)
-                </code>
-              </pre>
+              <div className="border border-border bg-surface font-mono text-xs overflow-x-auto">
+                <table className="w-full min-w-[440px] border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-border text-[10px] tracking-[0.08em] uppercase text-subtle">
+                      <th className="px-3.5 py-2.5 font-normal">Store</th>
+                      <th className="px-3.5 py-2.5 font-normal border-l border-border">
+                        Persisted Data
+                      </th>
+                      <th className="px-3.5 py-2.5 font-normal border-l border-border">
+                        Retention
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border text-[11px]">
+                    {TELEMETRY_STORES.map((row) => (
+                      <tr key={row.store} className="align-top">
+                        <td className="px-3.5 py-3 text-foreground whitespace-nowrap">
+                          {row.store}
+                        </td>
+                        <td className="px-3.5 py-3 text-muted-foreground border-l border-border leading-relaxed">
+                          {row.data}
+                        </td>
+                        <td className="px-3.5 py-3 text-foreground border-l border-border leading-relaxed">
+                          {row.retention}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="py-10 lg:pl-12 space-y-6">
@@ -633,13 +678,7 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
                 Every ticket advances through a strict finite state machine with immutable transition history recording the operator identifier and timestamp. CLOSED and CANCELLED are terminal states that lock response edits.
               </p>
 
-              <pre className="p-4 border border-border bg-surface font-mono text-[11px] sm:text-xs text-foreground overflow-x-auto leading-relaxed">
-                <code>
-                  PENDING ──→ IN_PROGRESS ──→ RESOLVED ──→ CLOSED [terminal]{"\n"}
-                  {"   "}│             │{"\n"}
-                  {"   "}└──→ CANCELLED [terminal] ←──┘
-                </code>
-              </pre>
+              <EscalationStateMachine />
             </div>
           </div>
         </div>
@@ -654,7 +693,7 @@ export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 border-t border-border pt-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-12 border-t border-border pt-12">
             {OPERATIONAL_GUARANTEES.map((item) => (
               <div
                 key={item.title}
