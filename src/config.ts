@@ -1,15 +1,15 @@
-export type DepthMode = "horizon" | "engine";
+export type ViewMode = "overview" | "architecture";
 
 export const DASHBOARD_HREF = "https://dash.anythingbutdotnet.app";
 
-export function readDepthFromHash(): DepthMode {
-  if (typeof window === "undefined") return "horizon";
-  return window.location.hash === "#engine" ? "engine" : "horizon";
+export function readViewFromHash(): ViewMode {
+  if (typeof window === "undefined") return "overview";
+  return window.location.hash === "#architecture" ? "architecture" : "overview";
 }
 
-export function syncHashToDepth(depth: DepthMode) {
+export function syncHashToView(view: ViewMode) {
   if (typeof window === "undefined") return;
-  const targetHash = depth === "engine" ? "#engine" : "";
+  const targetHash = view === "architecture" ? "#architecture" : "";
   if (window.location.hash !== targetHash) {
     window.history.replaceState(
       null,
@@ -22,5 +22,5 @@ export function syncHashToDepth(depth: DepthMode) {
 export function triggerWalkthroughPlayback() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event("sova:play-walkthrough"));
-  document.getElementById("specimen-film")?.scrollIntoView({ behavior: "smooth" });
+  document.getElementById("walkthrough-film")?.scrollIntoView({ behavior: "smooth" });
 }

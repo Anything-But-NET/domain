@@ -1,43 +1,43 @@
 import { useCallback, useEffect, useState } from "react";
+import { ArchitectureView } from "./components/ArchitectureView";
 import { ClosingFooter } from "./components/ClosingFooter";
 import { Header } from "./components/Header";
-import { HorizonView } from "./components/HorizonView";
-import { OpenEngineView } from "./components/OpenEngineView";
+import { OverviewView } from "./components/OverviewView";
 import { TeamSection } from "./components/TeamSection";
-import { type DepthMode, readDepthFromHash, syncHashToDepth } from "./config";
+import { readViewFromHash, syncHashToView, type ViewMode } from "./config";
 
 export function App() {
-  const [depth, setDepth] = useState<DepthMode>(() => readDepthFromHash());
+  const [view, setView] = useState<ViewMode>(() => readViewFromHash());
 
   useEffect(() => {
     const onHashChange = () => {
-      setDepth(readDepthFromHash());
+      setView(readViewFromHash());
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const handleSelectDepth = useCallback((next: DepthMode) => {
-    setDepth(next);
-    syncHashToDepth(next);
+  const handleSelectView = useCallback((next: ViewMode) => {
+    setView(next);
+    syncHashToView(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-brand selection:text-foreground flex flex-col">
-      <Header depth={depth} onSelectDepth={handleSelectDepth} />
+      <Header view={view} onSelectView={handleSelectView} />
 
       <main className="flex-1">
-        {depth === "horizon" ? (
-          <HorizonView onSelectDepth={handleSelectDepth} />
+        {view === "overview" ? (
+          <OverviewView onSelectView={handleSelectView} />
         ) : (
-          <OpenEngineView onSelectDepth={handleSelectDepth} />
+          <ArchitectureView onSelectView={handleSelectView} />
         )}
 
         <TeamSection />
       </main>
 
-      <ClosingFooter depth={depth} onSelectDepth={handleSelectDepth} />
+      <ClosingFooter view={view} onSelectView={handleSelectView} />
     </div>
   );
 }

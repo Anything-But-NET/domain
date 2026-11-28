@@ -37,10 +37,7 @@ export function TeamSection() {
   return (
     <section id="team" className="py-24 border-t border-border">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        <div className="lg:col-span-4 space-y-3">
-          <p className="font-mono text-[11px] tracking-[0.12em] uppercase text-muted-foreground">
-            Colophon // Craft
-          </p>
+        <div className="lg:col-span-4">
           <h2 className="font-serif text-3xl sm:text-4xl tracking-[-0.02em] text-foreground">
             Engineered by Anything But .NET.
           </h2>

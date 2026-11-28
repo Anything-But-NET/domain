@@ -1,37 +1,32 @@
 import { ArrowUpRight } from "lucide-react";
-import { DASHBOARD_HREF, type DepthMode } from "../config";
+import { DASHBOARD_HREF, type ViewMode } from "../config";
 import { CalibrationMark } from "./CalibrationMark";
 
 interface ClosingFooterProps {
-  depth: DepthMode;
-  onSelectDepth: (depth: DepthMode) => void;
+  view: ViewMode;
+  onSelectView: (view: ViewMode) => void;
 }
 
-export function ClosingFooter({ depth, onSelectDepth }: ClosingFooterProps) {
-  const nextDepth: DepthMode = depth === "horizon" ? "engine" : "horizon";
+export function ClosingFooter({ view, onSelectView }: ClosingFooterProps) {
+  const nextView: ViewMode = view === "overview" ? "architecture" : "overview";
 
   return (
     <footer className="border-t border-border bg-surface py-12">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-start sm:items-center gap-4">
-          <CalibrationMark className="size-4 text-foreground shrink-0 mt-1 sm:mt-0" />
-          <div className="space-y-1">
-            <p className="font-mono text-xs tracking-[0.14em] uppercase text-foreground">
-              SoVa
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Instruments obey the laws of the institution they serve.
-            </p>
-          </div>
+        <div className="flex items-center gap-3">
+          <CalibrationMark className="size-4 text-foreground shrink-0" />
+          <p className="font-mono text-xs tracking-[0.14em] uppercase text-foreground">
+            SoVa
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-6 font-mono text-xs">
           <button
             type="button"
-            onClick={() => onSelectDepth(nextDepth)}
+            onClick={() => onSelectView(nextView)}
             className="mechanical-lever text-muted-foreground hover:text-foreground uppercase tracking-[0.06em] focus-visible:outline-1 focus-visible:outline-brand"
           >
-            {depth === "horizon" ? "02 Open Engine" : "01 Horizon"}
+            {view === "overview" ? "Architecture" : "Overview"}
           </button>
 
           <a

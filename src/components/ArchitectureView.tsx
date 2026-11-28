@@ -1,13 +1,13 @@
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { useState } from "react";
 import controlPlaneImage from "../assets/control-plane.webp";
-import { DASHBOARD_HREF, type DepthMode } from "../config";
+import { DASHBOARD_HREF, type ViewMode } from "../config";
 
-interface OpenEngineViewProps {
-  onSelectDepth: (depth: DepthMode) => void;
+interface ArchitectureViewProps {
+  onSelectView: (view: ViewMode) => void;
 }
 
-type PrincipalKey = "FINANCE-L3" | "ENGINEERING";
+type RoleKey = "FINANCE-L3" | "ENGINEERING";
 type InquiryKey = "payroll" | "hardware" | "tax";
 
 interface TraceOutcome {
@@ -25,6 +25,13 @@ interface TraceOutcome {
   citation: string | null;
   actionNote: string;
 }
+
+const INVARIANTS = [
+  { value: "0", label: "Unauthorized tokens passed to LLM" },
+  { value: "100%", label: "Source-bound answers" },
+  { value: "0.600", label: "Confidence cutoff" },
+  { value: "15 min", label: "Human escalation draft" },
+];
 
 const INQUIRIES: { key: InquiryKey; code: string; label: string; question: string }[] = [
   {
@@ -47,9 +54,9 @@ const INQUIRIES: { key: InquiryKey; code: string; label: string; question: strin
   },
 ];
 
-function evaluateTrace(principal: PrincipalKey, inquiry: InquiryKey): TraceOutcome {
+function evaluateTrace(role: RoleKey, inquiry: InquiryKey): TraceOutcome {
   if (inquiry === "payroll") {
-    if (principal === "FINANCE-L3") {
+    if (role === "FINANCE-L3") {
       return {
         state: "ANSWERED_GROUNDED",
         matchedDocs: 1,
@@ -80,9 +87,9 @@ function evaluateTrace(principal: PrincipalKey, inquiry: InquiryKey): TraceOutco
       resolutionMs: 231,
       totalMs: 250,
       answer:
-        "Zero authorized passages matched principal clearance. Inference was never invoked. Confirmation draft opened for accountable human authority.",
+        "Zero authorized passages matched role clearance. Inference was never invoked. Confirmation draft opened for accountable human authority.",
       citation: null,
-      actionNote: "Storage boundary returned empty set · 900 s escalation draft staged.",
+      actionNote: "Storage boundary returned empty set · 15 min escalation draft staged.",
     };
   }
 
@@ -155,56 +162,37 @@ const PIPELINE_QUERY = [
   {
     step: "03",
     title: "Cutoff Gate & Escalation Custody",
-    body: "Enforces the 0.600 deterministic confidence gate, attaches verified source citations, writes complete trace telemetry, or opens a 900-second confirmation draft for human authority.",
+    body: "Enforces the 0.600 deterministic confidence gate, attaches verified source citations, writes complete trace telemetry, or opens a 15-minute confirmation draft for human authority.",
   },
 ];
 
-const GOLDEN_BENCHMARKS = [
-  { metric: "100.0%", detail: "Factual grounding & source binding (40 / 40 golden cases)" },
-  { metric: "85.0%", detail: "Answer relevance across 60-case evaluation suite" },
-  { metric: "70.0%", detail: "Safe abstention recall at 0.600 deterministic cutoff" },
-  { metric: "0.704", detail: "Mean confidence across 149 scored production traces" },
-];
-
-const PRODUCTION_TELEMETRY = [
-  { label: "Answered (citation-bound)", count: "108", ratio: "69.2%", tone: "text-success" },
-  { label: "Safe abstention (below cutoff)", count: "25", ratio: "16.0%", tone: "text-warning" },
-  { label: "Escalated to accountable authority", count: "16", ratio: "10.3%", tone: "text-foreground" },
-  { label: "Upstream boundary fault", count: "7", ratio: "4.5%", tone: "text-destructive" },
-];
-
-export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
-  const [principal, setPrincipal] = useState<PrincipalKey>("FINANCE-L3");
+export function ArchitectureView({ onSelectView }: ArchitectureViewProps) {
+  const [role, setRole] = useState<RoleKey>("FINANCE-L3");
   const [inquiryKey, setInquiryKey] = useState<InquiryKey>("payroll");
 
   const selectedInquiry =
     INQUIRIES.find((item) => item.key === inquiryKey) ?? INQUIRIES[0];
-  const trace = evaluateTrace(principal, inquiryKey);
+  const trace = evaluateTrace(role, inquiryKey);
   const confidencePct = Math.round(Number(trace.confidence) * 100);
 
   return (
     <div>
-      {/* Engine Specification Header Strip */}
+      {/* Architecture Header & Invariants */}
       <section className="pt-12 pb-16 border-b border-border bg-surface">
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4 pb-8 border-b border-border">
-            <div className="space-y-2">
-              <p className="font-mono text-[11px] tracking-[0.12em] uppercase text-muted-foreground">
-                Door 02 // Forensic Runtime Inspection
-              </p>
-              <h1 className="font-serif text-4xl sm:text-5xl tracking-[-0.02em] text-foreground">
-                The Open Engine.
-              </h1>
-            </div>
+            <h1 className="font-serif text-4xl sm:text-5xl tracking-[-0.02em] text-foreground">
+              Architecture.
+            </h1>
 
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={() => onSelectDepth("horizon")}
+                onClick={() => onSelectView("overview")}
                 className="mechanical-lever inline-flex items-center gap-2 h-9 px-3.5 border border-border-strong bg-background text-muted-foreground hover:text-foreground font-mono text-[11px] tracking-[0.06em] uppercase focus-visible:outline-1 focus-visible:outline-brand"
               >
                 <ArrowLeft className="size-3.5" aria-hidden="true" />
-                <span>Return to horizon</span>
+                <span>Back to overview</span>
               </button>
               <a
                 href={DASHBOARD_HREF}
@@ -218,85 +206,61 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
             </div>
           </div>
 
-          {/* Deterministic Invariants Bar */}
-          <dl className="grid grid-cols-2 lg:grid-cols-4 border-l border-b border-border bg-background">
-            <div className="p-4 border-r border-t border-border space-y-1">
-              <dt className="font-mono text-[10px] tracking-[0.1em] uppercase text-subtle">
-                Pre-Inference ACL
-              </dt>
-              <dd className="font-mono text-xs text-foreground">ENFORCED AT STORAGE</dd>
-            </div>
-            <div className="p-4 border-r border-t border-border space-y-1">
-              <dt className="font-mono text-[10px] tracking-[0.1em] uppercase text-subtle">
-                Confidence Cutoff
-              </dt>
-              <dd className="font-mono text-xs text-foreground">0.600 DETERMINISTIC</dd>
-            </div>
-            <div className="p-4 border-r border-t border-border space-y-1">
-              <dt className="font-mono text-[10px] tracking-[0.1em] uppercase text-subtle">
-                Escalation Draft TTL
-              </dt>
-              <dd className="font-mono text-xs text-foreground">900 S (15 MIN)</dd>
-            </div>
-            <div className="p-4 border-r border-t border-border space-y-1">
-              <dt className="font-mono text-[10px] tracking-[0.1em] uppercase text-subtle">
-                Observed Sample
-              </dt>
-              <dd className="font-mono text-xs text-foreground">156 LIVE TRACES</dd>
-            </div>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-l border-b border-border bg-background">
+            {INVARIANTS.map((item) => (
+              <div
+                key={item.label}
+                className="p-5 border-r border-t border-border space-y-1.5"
+              >
+                <dd className="font-mono text-2xl font-medium tracking-tight text-foreground">
+                  {item.value}
+                </dd>
+                <dt className="font-mono text-[11px] text-muted-foreground leading-snug">
+                  {item.label}
+                </dt>
+              </div>
+            ))}
           </dl>
         </div>
       </section>
 
-      {/* Section 01: Interactive Clearance & Cutoff Trace Inspector */}
+      {/* Interactive Clearance & Cutoff Trace */}
       <section className="py-20 border-b border-border">
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
           <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="space-y-2">
-              <p className="font-mono text-[11px] tracking-[0.12em] uppercase text-muted-foreground">
-                01 // Deterministic Boundary &amp; Cutoff Trace
-              </p>
-              <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
-                Inspect clearance enforcement before inference.
-              </h2>
-            </div>
+            <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
+              Inspect clearance enforcement before inference.
+            </h2>
             <p className="font-mono text-xs text-muted-foreground">
-              Select a directory principal and an inquiry to inspect storage-level filtering and the 0.600 cutoff gate.
+              Select a role and an inquiry to inspect storage-level filtering and the 0.600 cutoff gate.
             </p>
           </div>
 
           <div className="border border-border bg-surface">
-            {/* Control Console Header */}
             <div className="px-5 py-3.5 border-b border-border flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-subtle">
-                  Active Principal
+                  Role
                 </span>
                 <div
                   role="group"
-                  aria-label="Directory principal"
+                  aria-label="Role"
                   className="inline-flex border border-border bg-background font-mono text-xs"
                 >
-                  {(["FINANCE-L3", "ENGINEERING"] as PrincipalKey[]).map((key, idx) => (
+                  {(["FINANCE-L3", "ENGINEERING"] as RoleKey[]).map((key, idx) => (
                     <button
                       key={key}
                       type="button"
-                      aria-pressed={principal === key}
-                      onClick={() => setPrincipal(key)}
-                      className={`mechanical-lever px-3 py-1.5 inline-flex items-center gap-2 focus-visible:outline-1 focus-visible:outline-brand ${
+                      aria-pressed={role === key}
+                      onClick={() => setRole(key)}
+                      className={`mechanical-lever px-3 py-1.5 inline-flex items-center focus-visible:outline-1 focus-visible:outline-brand ${
                         idx > 0 ? "border-l border-border" : ""
                       } ${
-                        principal === key
+                        role === key
                           ? "bg-panel text-foreground"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <span
-                        aria-hidden="true"
-                        className={`size-1.5 ${
-                          principal === key ? "bg-brand" : "bg-border-strong"
-                        }`}
-                      />
                       <span>{key}</span>
                     </button>
                   ))}
@@ -318,12 +282,11 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12">
-              {/* Left: Inquiry Selector & Output */}
               <div className="lg:col-span-6 p-6 sm:p-8 flex flex-col justify-between gap-8 border-b lg:border-b-0 lg:border-r border-border">
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-subtle">
-                      Test Inquiry
+                      Inquiry
                     </span>
                     <div className="grid grid-cols-1 gap-2">
                       {INQUIRIES.map((item) => (
@@ -350,7 +313,7 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
 
                   <div className="pt-4 border-t border-border space-y-2">
                     <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-subtle">
-                      Prompt Payload
+                      Question
                     </p>
                     <p className="text-base text-foreground leading-relaxed">
                       {selectedInquiry.question}
@@ -360,7 +323,7 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
                   <div className="border-l-2 border-brand pl-4 space-y-2.5">
                     <div className="flex items-center justify-between gap-2 font-mono text-[11px]">
                       <span className="text-foreground uppercase">
-                        Instrument Output
+                        Response
                       </span>
                       <span
                         className={
@@ -383,12 +346,11 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-border font-mono text-[11px] text-muted-foreground flex items-center justify-between gap-3">
+                <div className="pt-4 border-t border-border font-mono text-[11px] text-muted-foreground">
                   <span>{trace.actionNote}</span>
                 </div>
               </div>
 
-              {/* Right: Relational Boundary Predicate & Stage Telemetry */}
               <div className="lg:col-span-6 p-6 sm:p-8 bg-background flex flex-col justify-between gap-6 font-mono text-xs">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2 text-muted-foreground">
@@ -411,7 +373,7 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
                       <span className="text-muted-foreground">WHERE</span> d.allowed_groups{" "}
                       <span className="text-brand">&amp;&amp;</span>{" "}
                       <span className="bg-panel border border-border-strong px-1.5 py-0.5 text-foreground">
-                        ARRAY[&apos;{principal}&apos;]
+                        ARRAY[&apos;{role}&apos;]
                       </span>
                       {"\n"}
                       {"  "}<span className="text-muted-foreground">AND</span> vn.children_count = 0{"\n"}
@@ -421,7 +383,6 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
                     </code>
                   </pre>
 
-                  {/* Confidence Gauge against 0.600 cutoff */}
                   <div className="p-4 border border-border bg-surface space-y-2.5">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-muted-foreground">
@@ -443,7 +404,6 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
                         }`}
                         style={{ width: `${confidencePct}%` }}
                       />
-                      {/* 0.600 mechanical cutoff line */}
                       <div
                         aria-hidden="true"
                         className="absolute inset-y-0 w-[2px] bg-brand"
@@ -453,7 +413,6 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
                   </div>
                 </div>
 
-                {/* Stage Latency Breakdown */}
                 <div className="border-t border-border pt-4 space-y-2 text-[11px]">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span>01 perimeter &amp; principal resolution</span>
@@ -480,13 +439,10 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
         </div>
       </section>
 
-      {/* Section 02: Two Decoupled Pipelines */}
+      {/* Two Decoupled Pipelines */}
       <section className="py-20 border-b border-border">
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <div className="mb-12 max-w-2xl space-y-2">
-            <p className="font-mono text-[11px] tracking-[0.12em] uppercase text-muted-foreground">
-              02 // Sovereign Subsystem Architecture
-            </p>
+          <div className="mb-12 max-w-2xl">
             <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
               Two decoupled deterministic pipelines.
             </h2>
@@ -495,7 +451,7 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-b border-border lg:divide-x divide-border">
             <div className="py-8 lg:pr-12 border-b lg:border-b-0 border-border">
               <h3 className="font-mono text-xs tracking-[0.08em] uppercase text-foreground pb-4 border-b border-border">
-                Pipeline A // Corpus &amp; Principal Synchronization
+                Corpus &amp; Principal Synchronization
               </h3>
               <ol className="divide-y divide-border">
                 {PIPELINE_INGESTION.map((item) => (
@@ -521,7 +477,7 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
 
             <div className="py-8 lg:pl-12">
               <h3 className="font-mono text-xs tracking-[0.08em] uppercase text-foreground pb-4 border-b border-border">
-                Pipeline B // Pre-Filtered Retrieval &amp; Governed Resolution
+                Pre-Filtered Retrieval &amp; Governed Resolution
               </h3>
               <ol className="divide-y divide-border">
                 {PIPELINE_QUERY.map((item) => (
@@ -548,18 +504,13 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
         </div>
       </section>
 
-      {/* Section 03: Empirical Verification & Control Plane */}
+      {/* Control Plane */}
       <section className="py-20">
-        <div className="max-w-6xl mx-auto px-5 sm:px-8 space-y-12">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="space-y-2">
-              <p className="font-mono text-[11px] tracking-[0.12em] uppercase text-muted-foreground">
-                03 // Empirical Telemetry &amp; Control Plane
-              </p>
-              <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
-                Measured performance across 156 live inquiries.
-              </h2>
-            </div>
+            <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
+              Operator Control Plane.
+            </h2>
 
             <a
               href={DASHBOARD_HREF}
@@ -567,80 +518,17 @@ export function OpenEngineView({ onSelectDepth }: OpenEngineViewProps) {
               rel="noopener noreferrer"
               className="mechanical-lever inline-flex items-center gap-2 font-mono text-xs text-foreground hover:text-brand uppercase"
             >
-              <span>Inspect live telemetry</span>
+              <span>Open live control plane</span>
               <ArrowUpRight className="size-3.5" aria-hidden="true" />
             </a>
           </div>
 
-          {/* Golden Evaluation Strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-t border-l border-border bg-surface">
-            {GOLDEN_BENCHMARKS.map((item) => (
-              <div
-                key={item.detail}
-                className="p-6 border-r border-b border-border space-y-2"
-              >
-                <p className="font-mono text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
-                  {item.metric}
-                </p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {item.detail}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Outcome Table + Framed Control Plane Plate */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 border border-border bg-surface">
-            <div className="lg:col-span-5 p-6 sm:p-8 border-b lg:border-b-0 lg:border-r border-border flex flex-col justify-between gap-6">
-              <div className="space-y-5">
-                <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                  <span>Outcome Distribution</span>
-                  <span>N = 156</span>
-                </div>
-
-                <div className="divide-y divide-border border-t border-b border-border">
-                  {PRODUCTION_TELEMETRY.map((row) => (
-                    <div
-                      key={row.label}
-                      className="py-3.5 flex items-center justify-between gap-4 font-mono text-xs"
-                    >
-                      <span className={row.tone}>{row.label}</span>
-                      <div className="flex items-center gap-4 shrink-0">
-                        <span className="text-foreground">{row.count}</span>
-                        <span className="text-muted-foreground w-12 text-right">
-                          {row.ratio}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border font-mono text-xs space-y-1.5">
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Corpus &amp; directory footprint</span>
-                  <span className="text-foreground">50 docs / 25 principals</span>
-                </div>
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Mean / p95 latency</span>
-                  <span className="text-foreground">1,400 ms / 3,658 ms</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-7 flex flex-col bg-background">
-              <div className="h-10 px-4 sm:px-5 border-b border-border flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
-                <span>Fig. 03 // Operator Control Plane</span>
-                <span className="text-subtle">TELEMETRY &amp; QUEUE</span>
-              </div>
-              <div className="p-4 sm:p-6">
-                <img
-                  src={controlPlaneImage}
-                  alt="SoVa operator control plane displaying outcome analytics, confidence scores, and latency distribution"
-                  className="w-full h-auto border border-border block"
-                />
-              </div>
-            </div>
+          <div className="border border-border bg-background">
+            <img
+              src={controlPlaneImage}
+              alt="SoVa operator control plane displaying outcome analytics, confidence scores, and latency distribution"
+              className="w-full h-auto block"
+            />
           </div>
         </div>
       </section>
