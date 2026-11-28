@@ -5,14 +5,15 @@ interface CalibrationMarkProps {
 export function CalibrationMark({ className = "size-4" }: CalibrationMarkProps) {
   return (
     <svg
+      xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 32 32"
       fill="none"
       aria-hidden="true"
       className={className}
     >
-      <path d="M2 20V2H30V20H24V8H8V20H2Z" fill="currentColor" />
-      <circle cx="16" cy="14" r="3.5" fill="currentColor" />
-      <rect x="2" y="24" width="18" height="6" fill="currentColor" />
+      <path d="M2 2H30V20H24V8H8V20H2V2Z" fill="#ece9e1" />
+      <circle cx="16" cy="15" r="4" fill="#ece9e1" />
+      <rect x="2" y="24" width="18" height="6" fill="#ece9e1" />
       <rect x="24" y="24" width="6" height="6" fill="#c95b3c" />
     </svg>
   );
