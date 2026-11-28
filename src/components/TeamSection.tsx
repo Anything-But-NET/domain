@@ -1,35 +1,35 @@
 const TEAM = [
   {
     name: "Oleh Pona",
-    role: "Team Lead & Java Core",
+    role: "Team Lead & Resolution Core",
   },
   {
     name: "Vitalii Peleshko",
-    role: ".NET Graph Ingestion & Slack Bot",
+    role: "Corpus Ingestion & Workplace Interface",
   },
   {
     name: "Dmytro Patsula",
-    role: "Java Core & Diagnostics",
+    role: "Resolution Core & Trace Diagnostics",
   },
   {
     name: "Maksym Hrechanyi",
-    role: "Event Pipeline & Sync",
+    role: "Event Pipeline & Synchronization",
   },
   {
     name: "Vasyl Khrustiuk",
-    role: "Next.js Dashboard & Schemas",
+    role: "Control Plane & Data Schemas",
   },
   {
     name: "Andrii Bezpalko",
-    role: "Python Search & Embeddings",
+    role: "Semantic Retrieval & Vector Indexing",
   },
   {
     name: "Taras Ivaniuk",
-    role: "Access Control & Group Filtering",
+    role: "Clearance Enforcement & Group Filtering",
   },
   {
     name: "Zakharii Abramchuk",
-    role: "Infrastructure & API Contracts",
+    role: "Infrastructure & Service Contracts",
   },
 ];
 
@@ -37,13 +37,16 @@ export function TeamSection() {
   return (
     <section id="team" className="py-24 border-t border-border">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        <div className="lg:col-span-4">
-          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
-            Built by Anything But .NET
+        <div className="lg:col-span-4 space-y-3">
+          <p className="font-mono text-[11px] tracking-[0.12em] uppercase text-muted-foreground">
+            Colophon // Craft
+          </p>
+          <h2 className="font-serif text-3xl sm:text-4xl tracking-[-0.02em] text-foreground">
+            Engineered by Anything But .NET.
           </h2>
         </div>
 
-        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-x-10">
+        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-x-10 border-t border-border">
           {TEAM.map((member) => (
             <div
               key={member.name}
@@ -52,7 +55,9 @@ export function TeamSection() {
               <h3 className="text-base font-medium text-foreground">
                 {member.name}
               </h3>
-              <p className="text-sm text-muted-foreground">{member.role}</p>
+              <p className="font-mono text-xs text-muted-foreground">
+                {member.role}
+              </p>
             </div>
           ))}
         </div>
